@@ -1,0 +1,128 @@
+README for Sylverant PSO Patcher v1.0
+Copyright (C) 2011 Lawrence Sebald
+-------------------------------------
+
+What is Sylverant PSO Patcher?
+------------------------------
+Sylverant PSO Patcher is a program designed to be used as a boot-disc for the
+Sega Dreamcast to patch various aspects of the game Phantasy Star Online. The
+individual items patched depend on the version of the game, which is detected
+automatically at run-time. This patching program offers the ability to have
+PSO auto-connect to a private server (specifically the Sylverant Private
+Server hosted at sylverant.net), fix the missing ultimate maps in v2, and to
+re-enable use of the versions of the game that have been hampered by the
+Hunter's License check.
+
+While the first and third patches (the private server connection and disabling
+the Hunter's License check) could be done with a cheat device, such as the
+Codebreaker/Xploder, many people are opposed to their use, even for legitimate
+purposes that do not involve cheating. Sylverant PSO Patcher gives those
+opposed to using cheating devices another option to connect with. Also, within
+our research in putting together this program, we could not find a way to get
+the second patch (the Ultimate mode map fix) to work with Codebreaker/Xploder
+at all!
+
+This program is the result of a bunch of research done by myself and Aleron
+Ives. Aleron Ives is the one that came up with the Ultimate mode map fix (both
+on PSOPC and on the Dreamcast versions). I was the one that worked out how to
+fix the Hunter's License check issue. In addition, Lee provided Ives (and thus
+myself as well) with some data that was needed to complete the project. Many
+thanks go out to both Aleron Ives and Lee for their part in getting this project
+off the ground!
+
+
+What versions of PSO does Sylverant PSO Patcher work with?
+----------------------------------------------------------
+Sylverant PSO Patcher works with the following versions of PSO (for Dreamcast):
+
+    - Phantasy Star Online - Japanese
+    - Phantasy Star Online - US
+    - Phantasy Star Online - European/PAL
+    - Phantasy Star Online Ver.2 - Japanese
+    - Phantasy Star Online Ver.2 - US
+    - Phantasy Star Online Ver.2 - European/PAL
+
+That should be all versions released for the Dreamcast, with the exception of
+any trial/beta/etc versions. If you find a version of the game that it does
+not work with, please let me know! Every once in a while, it may report an
+issue reading one of these game discs. Most likely, this means that either your
+disc is dirty/scratched or the GD-ROM laser in your Dreamcast is weak and
+cannot read the disc properly.
+
+Also, please note that this program intentionally only works with GD-ROM
+copies of the game. It will not work with any versions burned onto a CD-R, and
+I will never release a version that works with CD-R copies of the game. Doing
+so, in my eyes, would encourage piracy, which is not something I want to do.
+
+
+How do I use Sylverant PSO Patcher?
+-----------------------------------
+Most people will probably want to use Sylverant PSO Patcher as a boot-disc for
+their copy of PSO. To do so, just burn Sylverant PSO Patcher as you would any
+other homebrew program for the Dreamcast. The 1ST_READ.BIN file that is
+included with the binary release is pre-scrambled.
+
+How you go about burning the disc is completely up to you. I personally still
+follow Marcus' old guide at http://mc.pp.se/dc/cdr.html and burn from the
+command line on my Mac or on Linux. On Windows, you may find BootDreams to be
+useful in burning the program.
+
+It is also possible to use dcload-ip or dcload-serial to upload the binary to
+your Dreamcast and run it. If you want to do that, I suggest taking the binary
+release and descrambling the 1ST_READ.BIN and uploading that. You should use
+dcload's "-n" switch, as Sylverant PSO Patcher overwrites dcload's memory space
+on the Dreamcast shortly after starting. Without the -n switch, dcload will get
+very confused and probably prevent the program from working at all.
+
+Once the patcher starts, you should swap in a GD-ROM disc. From there, follow
+the prompts on the screen (it should tell you what version of the game you put
+in the drive, and ask you to press start to boot the game). If it displays a
+message saying that it doesn't recognize the disc, you may want to reboot your
+Dreamcast, and check your PSO disc and the laser of your Dreamcast, then try
+again.
+
+Note, this program can be used essentially as an import boot disc for the
+Dreamcast as well. In this case, if you're putting in a game other than PSO, you
+can safely ignore the warning that it doesn't recognize the game. As long as the
+game is pretty normal, it should "just work".
+
+
+Special Thanks!
+---------------
+Special thanks go out to the following people who have in some way influenced
+this program:
+
+    - Aleron Ives - For pushing me to do this in the first place, for the
+                    Ultimate mode map fix, and for providing me with some data
+                    that was needed to finish the program. Also, for testing out
+                    a few initial versions of the program before I released it.
+    - Lee - For providing data to Aleron Ives that I needed for finishing the
+            program.
+    - Schthack - For making the first private server for PSO. Without Schthack's
+                 private server, PSO would probably be long gone by now.
+    - Jean-Paul Van Gorder - For providing the background used in the program.
+
+
+License
+-------
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License version 3,
+as published by the Free Software Foundation.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+
+That's all for now!
+-------------------
+Thanks for using Sylverant PSO Patcher. Long live the Dreamcast, and long live
+Phantasy Star Online!
+
+- Lawrence (aka BlueCrab)
+  http://sylverant.net/
+  August 27, 2011
