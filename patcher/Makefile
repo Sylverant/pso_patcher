@@ -31,7 +31,7 @@ patcher.elf: $(OBJS) romdisk.o
 	kos-cc -o $@ $^ -lpng -lz -lm -lkosutils
 	
 romdisk.img:
-	$(KOS_GENROMFS) -f $@ -d romdisk -v
+	$(KOS_GENROMFS) -f $@ -d romdisk -v -x .svn
 
 romdisk.o: romdisk.img
 	$(KOS_BASE)/utils/bin2o/bin2o $< romdisk $@

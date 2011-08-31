@@ -62,6 +62,12 @@ extern uint8 patches_enabled;
 
 uint32 *gd_vector_addr = (uint32 *)0x8C0000BC;
 
+/* Stuff for starting the game binary... */
+typedef uint32 u32;
+typedef void (*runfunc)(u32, u32, u32, u32) __attribute__((noreturn));
+extern void clear_and_load(u32, u32, u32, u32);
+extern uint32 _arch_old_sr, _arch_old_vbr, _arch_old_stack, _arch_old_fpscr;
+
 /* Framebuffer printf with transparent backgrounds... */
 int fb_init();
 int fb_printf(const char *fmt, ...);
@@ -139,11 +145,12 @@ int main(int argc, char *argv[]) {
     int rv = -1, i;
     uint32 data_fad = 0, sz;
     pso_disc_t *disc;
+    runfunc f;
 
     fb_init();
     load_and_draw_bg();
 
-    fb_printf("Sylverant PSO Patcher v1.0\n"
+    fb_printf("Sylverant PSO Patcher v1.1\n"
               "Copyright (C) 2011 Lawrence Sebald\n\n");
 
     /* Wait for the user to insert a GD-ROM */
@@ -244,5 +251,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* We're done, pass off control. */
-    arch_exec(bin, len);
+    f = (runfunc)(0x8C008000 +
+                  (((uint8 *)clear_and_load) - ((uint8 *)gd_syscall)));
+    f(_arch_old_sr, _arch_old_vbr, _arch_old_fpscr, _arch_old_stack);
 }

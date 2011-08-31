@@ -1,0 +1,8 @@
+Sylverant PSO Patcher ChangeLog
+-------------------------------
+
+v1.0 -> v1.1 (Released August 31, 2011):
+----------------------------------------
+ * Fix an issue where the the game would only display a black screen when using
+   a VGA box.
+ * Fix various in-game glitchy/broken behavior when using the patcher.

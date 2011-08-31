@@ -1,4 +1,4 @@
-README for Sylverant PSO Patcher v1.0
+README for Sylverant PSO Patcher v1.1
 Copyright (C) 2011 Lawrence Sebald
 -------------------------------------
 
@@ -29,6 +29,20 @@ fix the Hunter's License check issue. In addition, Lee provided Ives (and thus
 myself as well) with some data that was needed to complete the project. Many
 thanks go out to both Aleron Ives and Lee for their part in getting this project
 off the ground!
+
+
+What has changed in v1.1?
+-------------------------
+In a nutshell, v1.0 was very buggy. In fact, I'm somewhat surprised that we
+didn't see the bugs in testing it initially. For that, I apologize. Version 1.1
+fixes the following bugs:
+
+1. PSO shows only a black screen when connected via a VGA box.
+2. Various in-game bugs are exhibited, such as being able to walk through the
+   pillar in the Hunter's Guild and techniques not targeting properly.
+
+The first bug, I'd consider somewhat minor. The second one though is plain bad.
+They're both fixed in v1.1 though.
 
 
 What versions of PSO does Sylverant PSO Patcher work with?
@@ -125,4 +139,4 @@ Phantasy Star Online!
 
 - Lawrence (aka BlueCrab)
   http://sylverant.net/
-  August 27, 2011
+  August 31, 2011
