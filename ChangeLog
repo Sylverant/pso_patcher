@@ -1,6 +1,12 @@
 Sylverant PSO Patcher ChangeLog
 -------------------------------
 
+v1.1 -> v1.2:
+----------------------------------------
+ * Fix an issue with booting games with multiple data tracks in the high-density
+   area of the GD-ROM.
+ * Fix booting of games that the main binary is not called 1ST_READ.BIN.
+
 v1.0 -> v1.1 (Released August 31, 2011):
 ----------------------------------------
  * Fix an issue where the the game would only display a black screen when using

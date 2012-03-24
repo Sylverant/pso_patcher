@@ -39,6 +39,7 @@
 
 #define BIN_BASE    0x8C010000
 #define IP_BASE     0x8C008000
+#define SYS_BASE    0x8C008000
 #define IP_LEN      32768
 #define MAP_TABLE   0x8C0081FC
 #define MAP_NAMES   0x8C0082BC
@@ -134,6 +135,27 @@ static void load_and_draw_bg() {
     kos_img_free(&img, 0);
 }
 
+uint32 gd_locate_data_track(CDROM_TOC *toc) {
+    int i, first, last;
+
+    first = TOC_TRACK(toc->first);
+    last = TOC_TRACK(toc->last);
+
+    if(first < 1 || last > 99 || first > last) {
+        /* Guess that its the first High Density area track... */
+        return 45150;
+    }
+
+    for(i = first; i <= last; ++i) {
+        if(TOC_CTRL(toc->entry[i - 1]) == 4) {
+            return TOC_LBA(toc->entry[i - 1]);
+        }
+    }
+
+    /* Punt. */
+    return 45150;
+}
+
 extern uint8 romdisk[];
 KOS_INIT_ROMDISK(romdisk);
 
@@ -146,11 +168,13 @@ int main(int argc, char *argv[]) {
     uint32 data_fad = 0, sz;
     pso_disc_t *disc;
     runfunc f;
+    char filename[17];
+    char tmp[256];
 
     fb_init();
     load_and_draw_bg();
 
-    fb_printf("Sylverant PSO Patcher v1.1\n"
+    fb_printf("Sylverant PSO Patcher v1.2\n"
               "Copyright (C) 2011 Lawrence Sebald\n\n");
 
     /* Wait for the user to insert a GD-ROM */
@@ -169,7 +193,7 @@ int main(int argc, char *argv[]) {
     gd_read_toc((uint16 *)&toc, &sz);
 
     /* Figure out where IP.BIN should be... */
-    data_fad = cdrom_locate_data_track(&toc);
+    data_fad = gd_locate_data_track(&toc);
 
     /* We'll need to read from the disc to grab 1ST_READ.BIN... */
     fs_iso9660_gd_init();
@@ -182,11 +206,29 @@ int main(int argc, char *argv[]) {
         gd_read_sector(data_fad + i, (uint16 *)(ip_bin + (i * 2048)), &sz);
     }
 
+    memcpy(filename, ip_bin, 16);
+    filename[16] = 0;
+
     /* Grab the CRC of IP.BIN */
     ipcrc = net_crc32le(ip_bin, IP_LEN);
-    fb_printf("Reading 1ST_READ.BIN...\n");
 
-    fp = fopen("/gd/1ST_READ.BIN", "rb");
+    /* Figure out what the boot file is called */
+    memcpy(filename, (char *)IP_BASE + 0x60, 16);
+    filename[16] = 0;
+
+    /* Remove any spaces at the end of the filename */
+    for(i = 0; i < 16; ++i) {
+        if(filename[i] == ' ') {
+            filename[i] = 0;
+            break;
+        }
+    }
+
+    fb_printf("Reading %s...\n", filename);
+
+    /* Read the file */
+    sprintf(tmp, "/gd/%s", filename);
+    fp = fopen(tmp, "rb");
     if(!fp) {
         return -1;
     }
@@ -210,14 +252,25 @@ int main(int argc, char *argv[]) {
 
     if(!disc) {
         fb_printf("Inserted disc is unknown...\n"
-               "If it is PSO, please report the CRCs shown below\n"
-               "along with the version of PSO in use.\n"
-               "IP.BIN CRC: %08x\n"
-               "1ST_READ.BIN CRC = %08x\n\n"
-               "Press START to load anyway.\n", (unsigned int)ipcrc,
-               (unsigned int)crc);
-        wait_for_start();
+                  "If it is PSO, please report the CRCs below\n"
+                  "along with the version of PSO in use.\n"
+                  "IP.BIN CRC: %08x\n"
+                  "%s CRC = %08x\n\n"
+                  "Press START to load anyway.\n", (unsigned int)ipcrc,
+                  filename, (unsigned int)crc);
+
+        /* Copy the syscall on to where it goes, and patch the address in the
+           syscalls table. */
+        old_gd_vector = *gd_vector_addr;
         patches_enabled = 0;
+
+        memcpy((void *)IP_BASE, gd_syscall, gd_syscall_len);
+        *gd_vector_addr = IP_BASE;
+        dcache_flush_range(IP_BASE, 768);
+        icache_flush_range(IP_BASE, 768);
+        dcache_flush_range(0x8C0000BC, 4);
+
+        wait_for_start();
     }
     else {
         /* Copy the GD-ROM syscall replacement... We can use from 0x8C008000 - 
@@ -232,26 +285,25 @@ int main(int argc, char *argv[]) {
 
         /* Copy the syscall on to where it goes, and patch the address in the
            syscalls table. */
-        memcpy((void *)IP_BASE, gd_syscall, gd_syscall_len);
-        *gd_vector_addr = IP_BASE;
+        memcpy((void *)SYS_BASE, gd_syscall, gd_syscall_len);
+        *gd_vector_addr = SYS_BASE;
 
         /* Copy the map table stuff, as appropriate. */
         memcpy((void *)MAP_TABLE, map_ptrs[disc->index], sizeof(uint32) * 48);
         memcpy((void *)MAP_NAMES, map_names, 68);
 
-        dcache_flush_range(IP_BASE, 768);
-        icache_flush_range(IP_BASE, 768);
+        dcache_flush_range(SYS_BASE, 768);
+        icache_flush_range(SYS_BASE, 768);
         dcache_flush_range(0x8C0000BC, 4);
 
         /* Wait for the user to hit start. */
         fb_printf("Detected game:\n%s\n"
-               "Press START to load and patch!\n", disc->name);
+                  "Press START to load and patch!\n", disc->name);
 
         wait_for_start();
     }
 
-    /* We're done, pass off control. */
-    f = (runfunc)(0x8C008000 +
+    f = (runfunc)(SYS_BASE +
                   (((uint8 *)clear_and_load) - ((uint8 *)gd_syscall)));
     f(_arch_old_sr, _arch_old_vbr, _arch_old_fpscr, _arch_old_stack);
 }

@@ -147,7 +147,7 @@ _clear_and_load:
 .bin_base:
     ! This is actually the first stage of the IP.BIN file.
     .long       0xAC00B800
-    
+
 _gd_syscall_len:
     .long       _gd_syscall_len - _gd_syscall
     .balign     4

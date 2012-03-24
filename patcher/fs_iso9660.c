@@ -53,6 +53,8 @@ ISO9660 systems, as these were used as references as well.
 static int init_percd();
 static int percd_done;
 
+extern uint32 gd_locate_data_track(CDROM_TOC *toc);
+
 /********************************************************************************/
 /* Low-level Joliet utils */
 
@@ -320,7 +322,7 @@ static int init_percd() {
 
     gd_read_toc((uint16 *)&toc, &sz);
 
-    if (!(session_base = cdrom_locate_data_track(&toc)))
+    if (!(session_base = gd_locate_data_track(&toc)))
         return -1;
 
     /* Check for joliet extensions */

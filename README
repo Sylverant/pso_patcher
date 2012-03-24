@@ -1,4 +1,4 @@
-README for Sylverant PSO Patcher v1.1
+README for Sylverant PSO Patcher v1.2
 Copyright (C) 2011 Lawrence Sebald
 -------------------------------------
 
@@ -29,6 +29,17 @@ fix the Hunter's License check issue. In addition, Lee provided Ives (and thus
 myself as well) with some data that was needed to complete the project. Many
 thanks go out to both Aleron Ives and Lee for their part in getting this project
 off the ground!
+
+
+What has changed in v1.2?
+-------------------------
+In v1.2, work was performed to fix booting of games other than PSO. With simple
+games (games with only one track in the High-Density area), everything worked
+out fine. In fact, in games with multiple tracks it would work in most cases, as
+long as there was only one data track. However, I ran into at least one game
+that has multiple data tracks, and it would not work with that game. Also, v1.2
+actually reads the boot file name from the IP.BIN, so it can boot games that do
+not call their main binary 1ST_READ.BIN.
 
 
 What has changed in v1.1?
