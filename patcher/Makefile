@@ -58,7 +58,7 @@ prpatcher.bin: prpatcher.elf
 	cp prpatcher.bin patcher.bin
 
 # We need to preprocess the patch.s file...
-patch.o: patch.s
+patch.o: patch.S
 	kos-cc -c $< -o $@
 
 include $(KOS_BASE)/Makefile.rules
