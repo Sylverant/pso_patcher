@@ -1,9 +1,10 @@
 /* KallistiOS ##version##
 
    fs_iso9660.c
-   Copyright (C)2000,2001,2003 Dan Potter
-   Copyright (C)2001 Andrew Kieschnick
-   Copyright (C)2002 Bero
+   Copyright (C) 2000,2001,2003 Dan Potter
+   Copyright (C) 2001 Andrew Kieschnick
+   Copyright (C) 2002 Bero
+   Copyright (C) 2012, 2013 Lawrence Sebald
 
 */
 
@@ -47,6 +48,7 @@ ISO9660 systems, as these were used as references as well.
 #include <ctype.h>
 #include <string.h>
 #include <malloc.h>
+#include <errno.h>
 
 #include "gd.h"
 
@@ -194,8 +196,8 @@ static uint32 iso_733(const uint8 *from) { return be_733(from); }
    this cache. As the cache fills up, sectors are removed from the end
    of it. */
 typedef struct {
-    int32	sector;			/* CD sector */
-    uint8	data[2048];		/* Sector data */
+    uint32  sector;         /* CD sector */
+    uint8   data[2048];     /* Sector data */
 } cache_block_t;
 
 /* List of cache blocks (ordered least recently used to most recently) */
@@ -212,7 +214,7 @@ static void bclear_cache(cache_block_t **cache) {
 
     mutex_lock(&cache_mutex);
     for (i=0; i<NUM_CACHE_BLOCKS; i++)
-        cache[i]->sector = -1;
+        cache[i]->sector = (uint32)-1;
     mutex_unlock(&cache_mutex);
 }
 
@@ -253,7 +255,7 @@ static int bread_cache(cache_block_t **cache, uint32 sector) {
 
     /* If not, look for an open cache slot; if we find one, use it */
     for (i=0; i<NUM_CACHE_BLOCKS; i++) {
-        if (cache[i]->sector == -1) break;
+        if (cache[i]->sector == (uint32)-1) break;
     }
 
     /* If we didn't find one, kick an LRU block out of cache */
@@ -562,6 +564,8 @@ static void * iso_open(vfs_handler_t * vfs, const char *fn, int mode) {
     file_t		fd;
     iso_dirent_t	*de;
 
+    (void)vfs;
+
     /* Make sure they don't want to open things as writeable */
     if ((mode & O_MODE_MASK) != O_RDONLY)
         return 0;
@@ -680,27 +684,47 @@ static off_t iso_seek(void * h, off_t offset, int whence) {
     file_t fd = (file_t)h;
 
     /* Check that the fd is valid */
-    if (fd>=MAX_ISO_FILES || fh[fd].first_extent==0 || fh[fd].broken)
+    if(fd >= MAX_ISO_FILES || fh[fd].first_extent == 0 || fh[fd].broken) {
+        errno = EBADF;
         return -1;
+    }
 
     /* Update current position according to arguments */
-    switch (whence) {
+    switch(whence) {
         case SEEK_SET:
+            if(offset < 0) {
+                errno = EINVAL;
+                return -1;
+            }
+
             fh[fd].ptr = offset;
             break;
+
         case SEEK_CUR:
+            if(offset < 0 && ((uint32)-offset) > fh[fd].ptr) {
+                errno = EINVAL;
+                return -1;
+            }
+
             fh[fd].ptr += offset;
             break;
+
         case SEEK_END:
+            if(offset < 0 && ((uint32)-offset) > fh[fd].size) {
+                errno = EINVAL;
+                return -1;
+            }
+
             fh[fd].ptr = fh[fd].size + offset;
             break;
+
         default:
+            errno = EINVAL;
             return -1;
     }
 
     /* Check bounds */
-    if (fh[fd].ptr < 0) fh[fd].ptr = 0;
-    if (fh[fd].ptr > fh[fd].size) fh[fd].ptr = fh[fd].size;
+    if(fh[fd].ptr > fh[fd].size) fh[fd].ptr = fh[fd].size;
 
     return fh[fd].ptr;
 }
@@ -834,6 +858,8 @@ static int iso_vblank_hnd;
 static void iso_vblank(uint32 evt) {
     int status, disc_type;
 
+    (void)evt;
+
     /* Get the status. This may fail if a CD operation is in
        progress in the foreground. */
     if (cdrom_get_status(&status, &disc_type) < 0)
@@ -849,24 +875,61 @@ static void iso_vblank(uint32 evt) {
 /* There's only one ioctl at the moment (re-initialize caches) but you should
    always clear data and size. */
 static int iso_ioctl(void * hnd, void *data, size_t size) {
+    (void)hnd;
+    (void)data;
+    (void)size;
+
     iso_reset();
 
     return 0;
+}
+
+static int iso_fcntl(void *h, int cmd, va_list ap) {
+    file_t fd = (file_t)h;
+    int rv = -1;
+
+    (void)ap;
+
+    if(fd >= MAX_ISO_FILES || !fh[fd].first_extent || fh[fd].broken) {
+        errno = EBADF;
+        return -1;
+    }
+
+    switch(cmd) {
+        case F_GETFL:
+            rv = O_RDONLY;
+
+            if(fh[fd].dir)
+                rv |= O_DIR;
+
+            break;
+
+        case F_SETFL:
+        case F_GETFD:
+        case F_SETFD:
+            rv = 0;
+            break;
+
+        default:
+            errno = EINVAL;
+    }
+
+    return rv;
 }
 
 /* Put everything together */
 static vfs_handler_t vh = {
     /* Name handler */
     {
-        "/gd",		/* name */
-        0,		/* tbfi */
-        0x00010000,	/* Version 1.0 */
-        0,		/* flags */
-        NMMGR_TYPE_VFS,	/* VFS handler */
+        "/gd",          /* name */
+        0,              /* tbfi */
+        0x00010000,     /* Version 1.0 */
+        0,              /* flags */
+        NMMGR_TYPE_VFS, /* VFS handler */
         NMMGR_LIST_INIT
     },
 
-    0, NULL,	/* no cacheing, privdata */
+    0, NULL,            /* no cacheing, privdata */
 
     iso_open,
     iso_close,
@@ -879,7 +942,18 @@ static vfs_handler_t vh = {
     iso_ioctl,
     NULL,
     NULL,
-    NULL
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    iso_fcntl,
+    NULL,               /* poll */
+    NULL,               /* link */
+    NULL,               /* symlink */
+    NULL,               /* seek64 */
+    NULL,               /* tell64 */
+    NULL                /* total64 */
 };
 
 /* Initialize the file system */

@@ -1,6 +1,6 @@
 /*
     This file is part of Sylverant PSO Patcher
-    Copyright (C) 2011 Lawrence Sebald
+    Copyright (C) 2011, 2013 Lawrence Sebald
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 3 as
@@ -171,11 +171,19 @@ int main(int argc, char *argv[]) {
     char filename[17];
     char tmp[256];
 
+    (void)argc;
+    (void)argv;
+
     fb_init();
     load_and_draw_bg();
 
+#ifndef PLANET_RING
     fb_printf("Sylverant PSO Patcher v1.2\n"
               "Copyright (C) 2011 Lawrence Sebald\n\n");
+#else
+    fb_printf("Sylverant Planet Ring Patcher v1.2\n"
+              "Copyright (C) 2011-2013 Lawrence Sebald\n\n");
+#endif
 
     /* Wait for the user to insert a GD-ROM */
     fb_printf("Please insert a GD-ROM...\n");
@@ -251,6 +259,7 @@ int main(int argc, char *argv[]) {
     disc = find_disc(ipcrc, crc);
 
     if(!disc) {
+#ifndef PLANET_RING
         fb_printf("Inserted disc is unknown...\n"
                   "If it is PSO, please report the CRCs below\n"
                   "along with the version of PSO in use.\n"
@@ -258,6 +267,15 @@ int main(int argc, char *argv[]) {
                   "%s CRC = %08x\n\n"
                   "Press START to load anyway.\n", (unsigned int)ipcrc,
                   filename, (unsigned int)crc);
+#else
+        fb_printf("Inserted disc is unknown...\n"
+                  "If it is Planet Ring, please report the\n"
+                  "CRCs below.\n"
+                  "IP.BIN CRC: %08x\n"
+                  "%s CRC = %08x\n\n"
+                  "Press START to load anyway.\n", (unsigned int)ipcrc,
+                  filename, (unsigned int)crc);
+#endif
 
         /* Copy the syscall on to where it goes, and patch the address in the
            syscalls table. */
@@ -281,16 +299,21 @@ int main(int argc, char *argv[]) {
         patch_trigger_pattern = disc->patch_trigger_pattern;
         old_gd_vector = *gd_vector_addr;
         server_addr = disc->server_addr;
+
+#ifndef PLANET_RING
         memcpy(&patches_count, patch_tables[disc->index], sizeof(uint32) * 19);
+#endif
 
         /* Copy the syscall on to where it goes, and patch the address in the
            syscalls table. */
         memcpy((void *)SYS_BASE, gd_syscall, gd_syscall_len);
         *gd_vector_addr = SYS_BASE;
 
+#ifndef PLANET_RING
         /* Copy the map table stuff, as appropriate. */
         memcpy((void *)MAP_TABLE, map_ptrs[disc->index], sizeof(uint32) * 48);
         memcpy((void *)MAP_NAMES, map_names, 68);
+#endif
 
         dcache_flush_range(SYS_BASE, 768);
         icache_flush_range(SYS_BASE, 768);

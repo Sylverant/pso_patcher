@@ -1,6 +1,6 @@
 /*
     This file is part of Sylverant PSO Patcher
-    Copyright (C) 2011 Lawrence Sebald
+    Copyright (C) 2011, 2013 Lawrence Sebald
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 3 as
@@ -18,7 +18,11 @@
 #ifndef PATCHES_H
 #define PATCHES_H
 
+#ifndef PLANET_RING
 #define NUM_PSO_DISCS   6
+#else
+#define NUM_PSO_DISCS   1
+#endif
 
 /* Structure used to store the information about each game disc. */
 typedef struct pso_disc {
@@ -31,6 +35,7 @@ typedef struct pso_disc {
     int index;
 } pso_disc_t;
 
+#ifndef PLANET_RING
 /* List of known PSO discs */
 static pso_disc_t discs[NUM_PSO_DISCS] = {
     {
@@ -183,5 +188,22 @@ static const uint32 map_ptrs[NUM_PSO_DISCS][48] = {
 static const char map_names[68] =
     "map_acave01_05\0map_acave03_05\0"
     "map_amachine01_05\0map_amachine02_05\0\0\0";
+
+#else
+
+/* List of known Planet Ring discs */
+static pso_disc_t discs[NUM_PSO_DISCS] = {
+    {
+        "Planet Ring (European)",
+        0xA9E0B039,
+        0xC4229B0E,
+        0x8C0721EC,
+        0x8C0721EC,
+        0x7473616D,
+        0
+    }
+};
+
+#endif
 
 #endif /* !PATCHES_H */
