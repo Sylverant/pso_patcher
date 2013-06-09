@@ -1,6 +1,6 @@
 README for Sylverant PSO Patcher v1.2
-Copyright (C) 2011 Lawrence Sebald
--------------------------------------
+Copyright (C) 2011-2013 Lawrence Sebald
+---------------------------------------
 
 What is Sylverant PSO Patcher?
 ------------------------------
@@ -30,6 +30,11 @@ myself as well) with some data that was needed to complete the project. Many
 thanks go out to both Aleron Ives and Lee for their part in getting this project
 off the ground!
 
+Sylverant PSO Patcher also now supports (if it is compiled to do so) patching
+the game Planet Ring to connect to the first private server for that game. There
+is much less interesting to have to patch for that, mainly just the server
+address and a couple of other strings (for blind dial and such).
+
 
 What has changed in v1.2?
 -------------------------
@@ -40,6 +45,15 @@ long as there was only one data track. However, I ran into at least one game
 that has multiple data tracks, and it would not work with that game. Also, v1.2
 actually reads the boot file name from the IP.BIN, so it can boot games that do
 not call their main binary 1ST_READ.BIN.
+
+v1.2 also added support to patch the game Planet Ring to connect to the private
+server for it. I don't run that private server, so if you run into bugs on that
+server, don't ask me to fix them. ;-)
+
+Finally, my compiled versions of v1.2 use newer version of KOS, a few commits
+after its 2.0.0 release. Thus, if you had a problem where the patcher wouldn't
+boot because you had a microphone plugged into your controller, that should be
+fixed.
 
 
 What has changed in v1.1?
@@ -80,12 +94,19 @@ I will never release a version that works with CD-R copies of the game. Doing
 so, in my eyes, would encourage piracy, which is not something I want to do.
 
 
+What versions of Planet Ring does Sylverant PSO Patcher work with?
+------------------------------------------------------------------
+Being that there is only one version of Planet Ring that I am aware of, it works
+with that one version. The note above about requiring a GD-ROM is still valid
+here as well.
+
+
 How do I use Sylverant PSO Patcher?
 -----------------------------------
 Most people will probably want to use Sylverant PSO Patcher as a boot-disc for
-their copy of PSO. To do so, just burn Sylverant PSO Patcher as you would any
-other homebrew program for the Dreamcast. The 1ST_READ.BIN file that is
-included with the binary release is pre-scrambled.
+their copy of PSO or Planet Ring. To do so, just burn Sylverant PSO Patcher as
+you would any other homebrew program for the Dreamcast. The 1ST_READ.BIN file
+that is included with the binary release is pre-scrambled.
 
 How you go about burning the disc is completely up to you. I personally still
 follow Marcus' old guide at http://mc.pp.se/dc/cdr.html and burn from the
@@ -125,7 +146,24 @@ this program:
             program.
     - Schthack - For making the first private server for PSO. Without Schthack's
                  private server, PSO would probably be long gone by now.
-    - Jean-Paul Van Gorder - For providing the background used in the program.
+    - Jean-Paul Van Gorder - For providing the background used in the program
+                             (for PSO).
+    - Neoblast and Indiket - For all of their work on the Planet Ring server.
+
+
+3rd Party Acknowledgements
+--------------------------
+This program makes use of the following 3rd party software:
+
+KallistiOS - Copyright (C) 1997-2013 KallistiOS Contributors
+- Licensed under the KOS License, which is a 3-clause BSD license. See
+  README.3rdparty for more information.
+
+zlib - Copyright (C) 1995-2012 Jean-loup Gailly and Mark Adler
+- License terms included in README.3rdparty.
+
+libpng
+- License terms included in README.3rdparty.
 
 
 License
@@ -150,4 +188,4 @@ Phantasy Star Online!
 
 - Lawrence (aka BlueCrab)
   http://sylverant.net/
-  August 31, 2011
+  June 9, 2013

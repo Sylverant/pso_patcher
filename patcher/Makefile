@@ -48,7 +48,7 @@ prpatcher.elf: $(OBJS) pr-romdisk.o
 	kos-cc -o $@ $^ -lpng -lz -lm -lkosutils
 
 pr-romdisk.img:
-	$(KOS_GENROMFS) -f $@ -d romdisk -v -x .svn
+	$(KOS_GENROMFS) -f $@ -d romdisk-pr -v -x .svn
 
 pr-romdisk.o: pr-romdisk.img
 	$(KOS_BASE)/utils/bin2o/bin2o $< romdisk $@
