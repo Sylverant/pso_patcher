@@ -1,15 +1,13 @@
 /* KallistiOS ##version##
 
    util/fb_console.c
-   Copyright (C) 2009 Lawrence Sebald
+   Copyright (C) 2009, 2013 Lawrence Sebald
 
 */
 
-#include <stdio.h>
 #include <stdarg.h>
-
-#include <dc/biosfont.h>
-#include <dc/video.h>
+#include "biosfont.h"
+#include "video.h"
 
 /* This is a very simple dbgio interface for doing debug to the framebuffer with
    the biosfont functionality. Basically, this was written to aid in debugging
@@ -22,8 +20,11 @@ static int cur_x, cur_y;
 static int min_x, min_y, max_x, max_y;
 
 /* I don't think this is in a header anywhere any more. */
-extern void *memcpy2(void *dest, const void *src, size_t count);
-extern void *memset2(void *s, unsigned short c, size_t count);
+extern void *memcpy2(void *dest, const void *src, uint32 count);
+extern void *memset2(void *s, unsigned short c, uint32 count);
+
+/* Bleh. */
+int vsprintf(char *s, const char *format, va_list ap);
 
 #define FONT_CHAR_WIDTH 12
 #define FONT_CHAR_HEIGHT 24
@@ -75,7 +76,7 @@ static int fb_write(int c) {
     return 1;
 }
 
-static int fb_write_string(const char *data) {
+int fb_write_string(const char *data) {
     int rv = 0;
 
     while(*data) {
@@ -86,14 +87,17 @@ static int fb_write_string(const char *data) {
     return rv;
 }
 
-int fb_printf(const char *fmt, ...) {
-    static char buf[512];
-    va_list args;
+int fb_write_hex(uint32 val) {
+    int shift = 28;
+    const char hexes[] = { '0', '1', '2', '3', '4', '5', '6', '7',
+                           '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
-    /* For our limited purposes, 512 is enough... */
-    va_start(args, fmt);
-	vsprintf(buf, fmt, args);
-	va_end(args);
+    fb_write('0');
+    fb_write('x');
+    while(shift >= 0) {
+        fb_write(hexes[(val >> shift) & 0x0F]);
+        shift -= 4;
+    }
 
-    return fb_write_string(buf);
+    return 10;
 }

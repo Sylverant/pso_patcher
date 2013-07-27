@@ -1,5 +1,5 @@
 !   This file is part of Sylverant PSO Patcher
-!   Copyright (C) 2011 Lawrence Sebald
+!   Copyright (C) 2011, 2013 Lawrence Sebald
 !
 !   This program is free software: you can redistribute it and/or modify
 !   it under the terms of the GNU General Public License version 3 as
@@ -14,7 +14,7 @@
 !   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 !   This code is simply responsible for loading the next phase of the program
-!   into RAM at the appropriate address (0xACD00000), rather than the normal
+!   into RAM at the appropriate address (0xACE00000), rather than the normal
 !   1ST_READ.BIN location of 0xAC010000 (or 0x8C010000, if you like locations in
 !   P1 instead of P2).
     .text
@@ -46,7 +46,7 @@ bin_size:
 bin_ptr:
     .long       bin
 bin_base:
-    .long       0xACD00000
+    .long       0xACE00000
 
     .section    .rodata
     .balign     4

@@ -1,5 +1,5 @@
 #	Sylverant PSO Patcher Makefile
-#	Copyright (C) 2011 Lawrence Sebald
+#	Copyright (C) 2011, 2013 Lawrence Sebald
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License version 3 as
@@ -13,23 +13,24 @@
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-TARGET = loader.bin
+CC = sh-elf-gcc -ml -m4-nofpu
+OBJCOPY = sh-elf-objcopy -O binary -R .stack
 
-OBJS = loader.o
+TARGET = loader.bin
 
 all: rm-elf $(TARGET)
 
-clean:
-	-rm -f $(TARGET) loader.bin loader.elf $(OBJS)
-
-rm-elf:
-	-rm -f $(TARGET) loader.elf
-
 loader.elf: loader.s ../patcher/patcher.bin
-	kos-cc -o $@ loader.s -nostartfiles -nostdlib -Ttext=0x8c010000 \
+	$(CC) -o $@ loader.s -nostartfiles -nostdlib -Ttext=0x8c010000 \
 		-Wa,-I../patcher
 
 loader.bin: loader.elf
-	kos-objcopy -O binary $^ $@
+	$(OBJCOPY) $^ $@
 
-include $(KOS_BASE)/Makefile.rules
+.PHONY : clean
+clean:
+	-rm -f $(TARGET) loader.bin loader.elf $(OBJS)
+
+.PHONY : rm-elf
+rm-elf:
+	-rm -f $(TARGET) loader.elf

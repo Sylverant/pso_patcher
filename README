@@ -1,4 +1,4 @@
-README for Sylverant PSO Patcher v1.2
+README for Sylverant PSO Patcher v2.0
 Copyright (C) 2011-2013 Lawrence Sebald
 ---------------------------------------
 
@@ -34,6 +34,37 @@ Sylverant PSO Patcher also now supports (if it is compiled to do so) patching
 the game Planet Ring to connect to the first private server for that game. There
 is much less interesting to have to patch for that, mainly just the server
 address and a couple of other strings (for blind dial and such).
+
+
+What has changed in v2.0?
+-------------------------
+In short, pretty much everything changed. The program was mostly rewritten from
+scratch. That said, that probably doesn't interest many people (if you want the
+nitty-gritty details, look at the ChangeLog).
+
+v2.0 fixes booting many games that would just not boot with earlier versions of
+the patcher, including one "new" version of PSO supported by the patcher
+(specifically, the PSO Network Trial Edition). Note that the patcher still isn't
+exactly intended as a general-purpose boot disc, even if it does happen to work.
+Some games still won't boot with it (any games that use Windows CE will throw up
+an error message, for instance).
+
+v2.0 no longer compiles against KOS (although it does include a few KOS source
+files). That actually accounts for quite a bit of work that went into this new
+version.
+
+v2.0 also fixes the annoying battle mode glitch that made it impossible to
+actually play battle mode games on PSOv2 when you boot with the patcher. Yes,
+the server has pretty much always supported battle mode and it did work -- just
+not when using the patcher disc. If you tried to play battle mode before and
+just immediately got the Time Up message, well, that's what this fixes.
+
+Another slight thing that v2.0 adds in is support to patch the background music
+table in PSOv2 to add the battle stages music to the main table so that it can
+be selected by quests. The only quest so far that does this is Aleron Ives'
+Prospective Horizons quest. This patch is optional. If you start the game with
+the A button instead of Start when it asks, then the bgm table will not be
+patched.
 
 
 What has changed in v1.2?
@@ -74,6 +105,7 @@ What versions of PSO does Sylverant PSO Patcher work with?
 ----------------------------------------------------------
 Sylverant PSO Patcher works with the following versions of PSO (for Dreamcast):
 
+    - Phantasy Star Online Network Trial Edition - Japanese
     - Phantasy Star Online - Japanese
     - Phantasy Star Online - US
     - Phantasy Star Online - European/PAL
@@ -82,11 +114,11 @@ Sylverant PSO Patcher works with the following versions of PSO (for Dreamcast):
     - Phantasy Star Online Ver.2 - European/PAL
 
 That should be all versions released for the Dreamcast, with the exception of
-any trial/beta/etc versions. If you find a version of the game that it does
-not work with, please let me know! Every once in a while, it may report an
-issue reading one of these game discs. Most likely, this means that either your
-disc is dirty/scratched or the GD-ROM laser in your Dreamcast is weak and
-cannot read the disc properly.
+any beta versions. If you find a version of the game that it does not work with,
+please let me know! Every once in a while, it may report an issue reading one of
+these game discs. Most likely, this means that either your disc is
+dirty/scratched or the GD-ROM laser in your Dreamcast is weak and cannot read
+the disc properly.
 
 Also, please note that this program intentionally only works with GD-ROM
 copies of the game. It will not work with any versions burned onto a CD-R, and
@@ -125,7 +157,9 @@ the prompts on the screen (it should tell you what version of the game you put
 in the drive, and ask you to press start to boot the game). If it displays a
 message saying that it doesn't recognize the disc, you may want to reboot your
 Dreamcast, and check your PSO disc and the laser of your Dreamcast, then try
-again.
+again. If you put in any regional version of PSOv2, it will give the option to
+patch the game without a music patch. Look at the "What has changed in v2.0?"
+for more information about that particular patch.
 
 Note, this program can be used essentially as an import boot disc for the
 Dreamcast as well. In this case, if you're putting in a game other than PSO, you
@@ -159,11 +193,9 @@ KallistiOS - Copyright (C) 1997-2013 KallistiOS Contributors
 - Licensed under the KOS License, which is a 3-clause BSD license. See
   README.3rdparty for more information.
 
-zlib - Copyright (C) 1995-2012 Jean-loup Gailly and Mark Adler
-- License terms included in README.3rdparty.
-
-libpng
-- License terms included in README.3rdparty.
+Various public domain sources from Marcus Comstedt
+- The iso9660 code in v2.0 and later comes from Marcus, as well as the maple
+  code. See the README.3rdparty file for more information.
 
 
 License
@@ -188,4 +220,4 @@ Phantasy Star Online!
 
 - Lawrence (aka BlueCrab)
   http://sylverant.net/
-  June 9, 2013
+  July 25, 2013

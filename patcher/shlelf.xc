@@ -7,7 +7,7 @@ SEARCH_DIR("/usr/local/dc-new/sh-elf/sh-elf/lib");
 SECTIONS
 {
   /* Read-only sections, merged into text segment: */
-  PROVIDE (__executable_start = 0x8cd00000); . = 0x8cd00000;
+  PROVIDE (__executable_start = 0x8ce00000); . = 0x8ce00000;
   .text           :
   {
     *(.text .stub .text.* .gnu.linkonce.t.*)

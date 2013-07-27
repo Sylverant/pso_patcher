@@ -1,6 +1,6 @@
 /*
     This file is part of Sylverant PSO Patcher
-    Copyright (C) 2011, 2013 Lawrence Sebald
+    Copyright (C) 2011, 2012, 2013 Lawrence Sebald
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 3 as
@@ -15,35 +15,28 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdio.h>
-#include <inttypes.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include <kos/net.h>
-#include <kos/dbgio.h>
-
-#include <dc/cdrom.h>
-#include <dc/maple.h>
-#include <dc/sq.h>
-#include <dc/maple/controller.h>
-
-#include <arch/types.h>
-#include <arch/exec.h>
-#include <arch/cache.h>
-
-#include <png/png.h>
-
-#include "patches.h"
+#include "cdfs.h"
+#include "cdrom.h"
 #include "gd.h"
+#include "patches.h"
+#include "video.h"
+#include "maple.h"
+#include "utils.h"
 
-#define BIN_BASE    0x8C010000
-#define IP_BASE     0x8C008000
-#define SYS_BASE    0x8C008000
+#ifndef PLANET_RING
+#include "psobg.h"
+#else
+#include "prbg.h"
+#endif
+
+#define BIN_BASE    0xac010000
+#define IP_BASE     0xac008000
+#define SYS_BASE    0x8c008000
 #define IP_LEN      32768
-#define MAP_TABLE   0x8C0081FC
-#define MAP_NAMES   0x8C0082BC
+#define MAP_TABLE   0xac0081fc
+#define MAP_NAMES   0xac0082bc
 
+extern unsigned long end;
 static uint8 *ip_bin = (uint8 *)IP_BASE;
 static uint8 *bin = (uint8 *)BIN_BASE;
 
@@ -60,23 +53,54 @@ extern uint32 patches[18];
 extern uint32 server_addr;
 extern uint32 gd_syscall_len;
 extern uint8 patches_enabled;
+extern void boot_stub(void *, uint32) __attribute__((noreturn));
+extern uint32 boot_stub_len;
 
-uint32 *gd_vector_addr = (uint32 *)0x8C0000BC;
+uint32 *gd_vector_addr = (uint32 *)0xac0000bc;
 
-/* Stuff for starting the game binary... */
-typedef uint32 u32;
-typedef void (*runfunc)(u32, u32, u32, u32) __attribute__((noreturn));
-extern void clear_and_load(u32, u32, u32, u32);
-extern uint32 _arch_old_sr, _arch_old_vbr, _arch_old_stack, _arch_old_fpscr;
+/* Dummy stub to make libgcc happy... */
+void atexit() { }
 
-/* Framebuffer printf with transparent backgrounds... */
-int fb_init();
-int fb_printf(const char *fmt, ...);
+/* Calculate a CRC-32 checksum over a given block of data. Somewhat inspired by
+   the CRC32 function in Figure 14-6 of http://www.hackersdelight.org/crc.pdf */
+uint32 crc32(const uint8 *data, int size) {
+    int i;
+    uint32 rv = 0xFFFFFFFF;
+
+    for(i = 0; i < size; ++i) {
+        rv ^= data[i];
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+        rv = (0xEDB88320 & (-(rv & 1))) ^(rv >> 1);
+    }
+
+    return ~rv;
+}
+
+static void draw_bg(void) {
+    int i;
+    uint16 *o = vram_s, *input = (uint16 *)bg_data;
+    uint16 *end = (uint16 *)(bg_data + bg_size);
+
+    /* Decode the RLE'd data into the framebuffer. */
+    while(input < end) {
+        for(i = 0; i < *input; ++i) {
+            *o++ = *(input + 1);
+        }
+
+        input += 2;
+    }
+}
 
 /* Find the right version of the game to patch. */
 static pso_disc_t *find_disc(uint32 ipcrc, uint32 bincrc) {
     int i;
-    pso_disc_t *rv = NULL;
+    pso_disc_t *rv = (pso_disc_t *)0;
 
     for(i = 0; i < NUM_PSO_DISCS; ++i) {
         if(discs[i].crc32_ip == ipcrc && discs[i].crc32_bin == bincrc) {
@@ -85,24 +109,6 @@ static pso_disc_t *find_disc(uint32 ipcrc, uint32 bincrc) {
     }
 
     return rv;
-}
-
-static void wait_for_start() {
-    maple_device_t *dev;
-    cont_state_t *state;
-    int i;
-
-    for(;;) {
-        i = 0;
-
-        while((dev = maple_enum_type(i++, MAPLE_FUNC_CONTROLLER))) {
-            state = (cont_state_t *)maple_dev_status(dev);
-
-            if(state && (state->buttons & CONT_START)) {
-                return;
-            }
-        }
-    }
 }
 
 static void wait_for_disc() {
@@ -115,24 +121,6 @@ static void wait_for_disc() {
     /* Mark that we found a disc (preliminarily... we'll clear this later if the
        disc isn't what we're looking for). */
     patches_enabled = 1;
-}
-
-static void load_and_draw_bg() {
-    kos_img_t img;
-
-    if(png_to_img("/rd/bg.png", PNG_NO_ALPHA, &img)) {
-        return;
-    }
-
-    /* Make sure the image is sane... */
-    if(img.w != 640 || img.h != 480 || img.fmt != KOS_IMG_FMT_RGB565) {
-        return;
-    }
-
-    /* Copy it over to the framebuffer */
-    sq_cpy(vram_s, img.data, img.byte_count);
-
-    kos_img_free(&img, 0);
 }
 
 uint32 gd_locate_data_track(CDROM_TOC *toc) {
@@ -156,72 +144,134 @@ uint32 gd_locate_data_track(CDROM_TOC *toc) {
     return 45150;
 }
 
-extern uint8 romdisk[];
-KOS_INIT_ROMDISK(romdisk);
+/* The next 3 functions are borrowed (with minor changes) from Marcus' old maple
+   demo program. The last one wasn't a function in Marcus' old code, but rather
+   sat right near the end of main(). */
+unsigned int read_belong(unsigned int *l) {
+    unsigned char *b = (unsigned char *)l;
+    return (b[0] << 24) | (b[1] << 16) | (b[2] << 8) | b[3];
+}
+
+void write_belong(unsigned int *l, unsigned int v) {
+    unsigned char *b = (unsigned char *)l;
+    b[0] = v >> 24;
+    b[1] = v >> 16;
+    b[2] = v >> 8;
+    b[3] = v;
+}
+
+/* Borrowed from KOS... */
+#define CONT_C              (1<<0)
+#define CONT_B              (1<<1)
+#define CONT_A              (1<<2)
+#define CONT_START          (1<<3)
+#define CONT_DPAD_UP        (1<<4)
+#define CONT_DPAD_DOWN      (1<<5)
+#define CONT_DPAD_LEFT      (1<<6)
+#define CONT_DPAD_RIGHT     (1<<7)
+#define CONT_Z              (1<<8)
+#define CONT_Y              (1<<9)
+#define CONT_X              (1<<10)
+#define CONT_D              (1<<11)
+#define CONT_DPAD2_UP       (1<<12)
+#define CONT_DPAD2_DOWN     (1<<13)
+#define CONT_DPAD2_LEFT     (1<<14)
+#define CONT_DPAD2_RIGHT    (1<<15)
+
+static uint16 wait_for_buttons(uint16 mask) {
+    int port;
+    char *res;
+    unsigned int params[1];
+    uint16 buttons;
+
+    for(;;) {
+        for(port = 0; port < 4; port++) {
+            /* Query controller condition (non-controller will return error) */
+            write_belong(&params[0], MAPLE_FUNC_CONTROLLER);
+
+            do {
+                res = maple_docmd(port, 0, MAPLE_COMMAND_GETCOND, 1, params);
+            } while(*res == MAPLE_RESPONSE_AGAIN);
+
+            if(*res == MAPLE_RESPONSE_DATATRF && res[3] >= 2 &&
+               read_belong((unsigned int *)(res + 4)) == MAPLE_FUNC_CONTROLLER) {
+                buttons = ~(*(uint16 *)(res + 8));
+
+                if(buttons & mask)
+                    return buttons & mask;
+            }
+        }
+    }
+}
+
+#define wait_for_start() wait_for_buttons(CONT_START)
+
+/* Framebuffer printf with transparent backgrounds... */
+int fb_init();
+int fb_write_string(const char *data);
+int fb_write_hex(uint32 val);
+
+void dcache_flush_range(uint32 base, uint32 len);
 
 int main(int argc, char *argv[]) {
-    FILE *fp;
-    uint32 len;
-    uint32 crc, ipcrc;
     CDROM_TOC toc;
-    int rv = -1, i;
-    uint32 data_fad = 0, sz;
-    pso_disc_t *disc;
-    runfunc f;
+    uint32 sz = 408, data_fad;
+    int i, fd, cur = 0, rsz;
     char filename[17];
-    char tmp[256];
+    uint32 ipcrc, crc;
+    pso_disc_t *disc;
+    int rv = -1;
+
+#ifndef PLANET_RING
+    const uint32 *ptbl;
+    uint16 buttons;
+#endif
 
     (void)argc;
     (void)argv;
 
+    vid_init(DM_640x480, PM_RGB565);
+    cdrom_init();
+    maple_init();
+
+restart:
     fb_init();
-    load_and_draw_bg();
+    draw_bg();
 
 #ifndef PLANET_RING
-    fb_printf("Sylverant PSO Patcher v1.2\n"
-              "Copyright (C) 2011 Lawrence Sebald\n\n");
+    fb_write_string("Sylverant PSO Patcher v2.0\n"
+                    "Copyright (C) 2011-2013 Lawrence Sebald\n\n");
 #else
-    fb_printf("Sylverant Planet Ring Patcher v1.2\n"
-              "Copyright (C) 2011-2013 Lawrence Sebald\n\n");
+    fb_write_string("Sylverant Planet Ring Patcher v2.0\n"
+                    "Copyright (C) 2011-2013 Lawrence Sebald\n\n");
 #endif
 
     /* Wait for the user to insert a GD-ROM */
-    fb_printf("Please insert a GD-ROM...\n");
+    fb_write_string("Please insert a GD-ROM...\n");
     wait_for_disc();
 
-    fb_printf("Please wait while the disc is read...\n");
+    fb_write_string("Please wait while the disc is read...\n");
 
     /* Reinitialize the drive */
-    while(rv != ERR_OK) {
+    do {
         rv = cdrom_reinit();
-    }
+    } while(rv != ERR_OK);
 
-    /* Read the TOC of the inserted disc */
-    sz = 408;
     gd_read_toc((uint16 *)&toc, &sz);
 
     /* Figure out where IP.BIN should be... */
     data_fad = gd_locate_data_track(&toc);
 
-    /* We'll need to read from the disc to grab 1ST_READ.BIN... */
-    fs_iso9660_gd_init();
-
-    fb_printf("Reading IP.BIN...\n");
+    fb_write_string("Reading IP.BIN...\n");
 
     /* Attempt to read in IP.BIN */
     for(i = 0; i < 16; ++i) {
         sz = 2048;
-        gd_read_sector(data_fad + i, (uint16 *)(ip_bin + (i * 2048)), &sz);
+        gd_read_sector(data_fad + i, (uint16 *)(ip_bin + i * 2048), &sz);
     }
 
-    memcpy(filename, ip_bin, 16);
-    filename[16] = 0;
-
-    /* Grab the CRC of IP.BIN */
-    ipcrc = net_crc32le(ip_bin, IP_LEN);
-
     /* Figure out what the boot file is called */
-    memcpy(filename, (char *)IP_BASE + 0x60, 16);
+    memcpy(filename, (char *)ip_bin + 0x60, 16);
     filename[16] = 0;
 
     /* Remove any spaces at the end of the filename */
@@ -232,63 +282,67 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    fb_printf("Reading %s...\n", filename);
+    /* Grab the CRC of IP.BIN */
+    ipcrc = crc32(ip_bin, IP_LEN);
 
-    /* Read the file */
-    sprintf(tmp, "/gd/%s", filename);
-    fp = fopen(tmp, "rb");
-    if(!fp) {
-        return -1;
+    /* See if the binary is a WinCE binary or not... Unfortunately, I still
+       can't seem to get WinCE games to boot... */
+    if(hex_to_uint32((char *)ip_bin + 0x38, 7) & 1) {
+        fb_write_string("Windows CE based games are not supported!\n"
+                        "Please remove the GD-ROM, insert a supported\n"
+                        "game and press START.\n");
+        wait_for_start();
+        patches_enabled = 0;
+        goto restart;
     }
 
-    fseek(fp, 0, SEEK_END);
-    len = (uint32)ftell(fp);
-    fseek(fp, 0, SEEK_SET);
+    fb_write_string("Reading ");
+    fb_write_string(filename);
+    fb_write_string("...\n");
 
-    fread(bin, 1, (size_t)len, fp);
-    fclose(fp);
+    /* Read the binary in. This reads directly into the correct address. */
+    if((fd = open(filename, O_RDONLY)) < 0)
+        return -1;
 
-    /* Flush the cache over the binary's space. */
-    dcache_flush_range(0x8C010000, len);
-    icache_flush_range(0x8C010000, len);
+    while((rsz = read(fd, bin + cur, 2048)) > 0) {
+        cur += rsz;
+    }
+
+    close(fd);
 
     /* Grab the CRC of the binary */
-    crc = net_crc32le(bin, len);
+    crc = crc32(bin, cur);
 
     /* Find the appropriate patch set... */
     disc = find_disc(ipcrc, crc);
 
     if(!disc) {
 #ifndef PLANET_RING
-        fb_printf("Inserted disc is unknown...\n"
-                  "If it is PSO, please report the CRCs below\n"
-                  "along with the version of PSO in use.\n"
-                  "IP.BIN CRC: %08x\n"
-                  "%s CRC = %08x\n\n"
-                  "Press START to load anyway.\n", (unsigned int)ipcrc,
-                  filename, (unsigned int)crc);
+        fb_write_string("Inserted disc is unknown...\n"
+                        "If it is PSO, please report the CRCs below\n"
+                        "along with the version of PSO in use.\n"
+                        "IP.BIN CRC: ");
+        fb_write_hex(ipcrc);
+        fb_write_string("\n");
+        fb_write_string(filename);
+        fb_write_string(" CRC = ");
+        fb_write_hex(crc);
+        fb_write_string("\n\nPress START to load anyway.\n");
 #else
-        fb_printf("Inserted disc is unknown...\n"
-                  "If it is Planet Ring, please report the\n"
-                  "CRCs below.\n"
-                  "IP.BIN CRC: %08x\n"
-                  "%s CRC = %08x\n\n"
-                  "Press START to load anyway.\n", (unsigned int)ipcrc,
-                  filename, (unsigned int)crc);
+        fb_write_string("Inserted disc is unknown...\n"
+                        "If it is Planet Ring, please report the\n"
+                        "CRCs below.\n"
+                        "IP.BIN CRC: ");
+        fb_write_hex(ipcrc);
+        fb_write_string("\n");
+        fb_write_string(filename);
+        fb_write_string(" CRC = ");
+        fb_write_hex(crc);
+        fb_write_string("\n\nPress START to load anyway.\n");
 #endif
 
-        /* Copy the syscall on to where it goes, and patch the address in the
-           syscalls table. */
-        old_gd_vector = *gd_vector_addr;
-        patches_enabled = 0;
-
-        memcpy((void *)IP_BASE, gd_syscall, gd_syscall_len);
-        *gd_vector_addr = IP_BASE;
-        dcache_flush_range(IP_BASE, 768);
-        icache_flush_range(IP_BASE, 768);
-        dcache_flush_range(0x8C0000BC, 4);
-
         wait_for_start();
+        patches_enabled = 0;
     }
     else {
         /* Copy the GD-ROM syscall replacement... We can use from 0x8C008000 - 
@@ -300,8 +354,36 @@ int main(int argc, char *argv[]) {
         old_gd_vector = *gd_vector_addr;
         server_addr = disc->server_addr;
 
+        /* Wait for the user to hit start. */
+        fb_write_string("Detected game:\n");
+        fb_write_string(disc->name);
+
+#ifdef PLANET_RING
+        fb_write_string("\nPress START to load and patch!\n");
+        wait_for_start();
+#else
+        /* If we're looking at PSOv2, there's optional patches. */
+        if(disc->index >= 3 && disc->index <= 5) {
+            fb_write_string("\nPress START to load with all patches or\n"
+                            "press A to load without the battle stage\n"
+                            "music patch.\n");
+            buttons = wait_for_buttons(CONT_START | CONT_A);
+
+            if(buttons & CONT_START)
+                ptbl = patch_tables2[disc->index];
+            else
+                ptbl = patch_tables[disc->index];
+        }
+        else {
+            fb_write_string("\nPress START to load and patch!\n");
+            wait_for_start();
+            ptbl = patch_tables[disc->index];
+        }
+#endif
+
 #ifndef PLANET_RING
-        memcpy(&patches_count, patch_tables[disc->index], sizeof(uint32) * 19);
+        /* Copy the patches over, now that we know what we're copying... */
+        memcpy(&patches_count, ptbl, sizeof(uint32) * 23);
 #endif
 
         /* Copy the syscall on to where it goes, and patch the address in the
@@ -313,20 +395,13 @@ int main(int argc, char *argv[]) {
         /* Copy the map table stuff, as appropriate. */
         memcpy((void *)MAP_TABLE, map_ptrs[disc->index], sizeof(uint32) * 48);
         memcpy((void *)MAP_NAMES, map_names, 68);
-#endif
+#endif        
 
         dcache_flush_range(SYS_BASE, 768);
-        icache_flush_range(SYS_BASE, 768);
-        dcache_flush_range(0x8C0000BC, 4);
-
-        /* Wait for the user to hit start. */
-        fb_printf("Detected game:\n%s\n"
-                  "Press START to load and patch!\n", disc->name);
-
-        wait_for_start();
     }
 
-    f = (runfunc)(SYS_BASE +
-                  (((uint8 *)clear_and_load) - ((uint8 *)gd_syscall)));
-    f(_arch_old_sr, _arch_old_vbr, _arch_old_fpscr, _arch_old_stack);
+    /* The binary is in place, so let's try to boot it, shall we? */
+    void (*f)(void) __attribute__((noreturn));
+    f = (void *)((uint32)(&boot_stub) | 0xa0000000);
+    f();
 }

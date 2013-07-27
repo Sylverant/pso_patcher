@@ -1,6 +1,6 @@
 /*
     This file is part of Sylverant PSO Patcher
-    Copyright (C) 2011 Lawrence Sebald
+    Copyright (C) 2013 Lawrence Sebald
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License version 3 as
@@ -15,15 +15,19 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef GD_H
-#define GD_H
+#ifndef UTILS_H
+#define UTILS_H
 
 #include "types.h"
 
-/* Read a single sector off the disc */
-int gd_read_sector(uint32 fad, uint16 *out, uint32 *sz);
+void memset(uint8 *p1, uint32 val, uint32 count);
+void memset2(uint16 *p1, uint32 val, uint32 count);
+void memset4(uint32 *p1, uint32 val, uint32 count);
 
-/* Read the TOC off the disc */
-int gd_read_toc(uint16 *out, uint32 *sz);
+void memcpy(void *p1, const void *p2, uint32 count);
+void memcpy2(uint16 *p1, const uint16 *p2, uint32 count);
+void memcpy4(uint32 *p1, const uint32 *p2, uint32 count);
 
-#endif /* !GD_H */
+uint32 hex_to_uint32(const char *hex, int len);
+
+#endif /* !UTILS_H */

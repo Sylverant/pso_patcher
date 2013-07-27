@@ -1,5 +1,5 @@
 #	Sylverant PSO Patcher Makefile
-#	Copyright (C) 2011, 2013 Lawrence Sebald
+#	Copyright (C) 2013 Lawrence Sebald
 #
 #	This program is free software: you can redistribute it and/or modify
 #	it under the terms of the GNU General Public License version 3 as
@@ -13,52 +13,39 @@
 #	You should have received a copy of the GNU General Public License
 #	along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-TARGET = patcher.bin
+AS = sh-elf-as -little
+CC = sh-elf-gcc -ml -m4-nofpu -ffunction-sections -fdata-sections \
+	 -ffreestanding -Wall -std=c99 -Wextra -Werror
+OBJCOPY = sh-elf-objcopy -O binary
 
-OBJS = patcher.o fs_iso9660.o patch.o gd.o fb_console.o
+# startup.o must show up first here...
+OBJS = startup.o cdrom.o gd.o patch.o cdfs.o patcher.o video.o biosfont.o \
+	   fb_console.o maple.o utils.o cache.o
 
-KOS_LDFLAGS = -Tshlelf.xc -nodefaultlibs $(KOS_LIB_PATHS)
+all: rm-elf patcher.bin
 
-all: rm-elf $(TARGET)
-
-prpatcher: KOS_CFLAGS += -DPLANET_RING
+prpatcher: CC += -DPLANET_RING
 prpatcher: rm-elf prpatcher.bin
 
-clean:
-	-rm -f $(TARGET) patcher.bin patcher.elf romdisk.* $(OBJS)
-	-rm -f prpatcher.elf prpatcher.bin pr-romdisk.*
-
-rm-elf:
-	-rm -f $(TARGET) patcher.elf romdisk.*
-	-rm -f prpatcher.bin prpatcher.elf pr-romdisk.*
-
-patcher.elf: $(OBJS) romdisk.o
-	kos-cc -o $@ $^ -lpng -lz -lm -lkosutils
-	
-romdisk.img:
-	$(KOS_GENROMFS) -f $@ -d romdisk -v -x .svn
-
-romdisk.o: romdisk.img
-	$(KOS_BASE)/utils/bin2o/bin2o $< romdisk $@
+patcher.elf: $(OBJS)
+	$(CC) -o $@ -Wl,--gc-sections -Tshlelf.xc -nostartfiles -nostdlib $^ -lgcc
 
 patcher.bin: patcher.elf
-	kos-objcopy -O binary $^ $@
+	$(OBJCOPY) $^ $@
 
-prpatcher.elf: $(OBJS) pr-romdisk.o
-	kos-cc -o $@ $^ -lpng -lz -lm -lkosutils
-
-pr-romdisk.img:
-	$(KOS_GENROMFS) -f $@ -d romdisk-pr -v -x .svn
-
-pr-romdisk.o: pr-romdisk.img
-	$(KOS_BASE)/utils/bin2o/bin2o $< romdisk $@
+prpatcher.elf: $(OBJS)
+	$(CC) -o $@ -Wl,--gc-sections -Tshlelf.xc -nostartfiles -nostdlib $^ -lgcc
 
 prpatcher.bin: prpatcher.elf
 	kos-objcopy -O binary $^ $@
 	cp prpatcher.bin patcher.bin
 
-# We need to preprocess the patch.s file...
-patch.o: patch.S
-	kos-cc -c $< -o $@
+.PHONY : rm-elf
+rm-elf:
+	-rm -f loader.elf loader.bin
 
-include $(KOS_BASE)/Makefile.rules
+.PHONY : clean
+clean:
+	-rm -f $(OBJS)
+	-rm -f *.elf
+	-rm -f *.bin

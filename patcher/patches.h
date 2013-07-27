@@ -19,7 +19,7 @@
 #define PATCHES_H
 
 #ifndef PLANET_RING
-#define NUM_PSO_DISCS   6
+#define NUM_PSO_DISCS   7
 #else
 #define NUM_PSO_DISCS   1
 #endif
@@ -27,11 +27,11 @@
 /* Structure used to store the information about each game disc. */
 typedef struct pso_disc {
     const char *name;
-    uint32 crc32_ip;
-    uint32 crc32_bin;
-    uint32 server_addr;
-    uint32 patch_trigger_addr;
-    uint32 patch_trigger_pattern;
+    unsigned int crc32_ip;
+    unsigned int crc32_bin;
+    unsigned int server_addr;
+    unsigned int patch_trigger_addr;
+    unsigned int patch_trigger_pattern;
     int index;
 } pso_disc_t;
 
@@ -91,6 +91,15 @@ static pso_disc_t discs[NUM_PSO_DISCS] = {
         0x8C2E301C,
         0x65747361,
         5
+    },
+    {
+        "Phantasy Star Online Network Trial Edition",
+        0x27EA2AB8,
+        0xE5A7F3A1,
+        0x8C22DF8D,
+        0x8C22DF90,
+        0x642E3230,
+        6
     }
 };
 
@@ -99,49 +108,122 @@ static pso_disc_t discs[NUM_PSO_DISCS] = {
    bug in the map table (not including all the ultimate mode maps). The first
    number in the list is the number of patches performed for that version. The
    rest of the numbers are in <address, value> pairs. */
-static const uint32 patch_tables[NUM_PSO_DISCS][19] = {
+static const uint32 patch_tables[NUM_PSO_DISCS][23] = {
     /* PSOv1 Japanese -- HL Check only */
     {
         1,
         0x8C20C474, 0xE000000B, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
     },
     /* PSOv1 US -- No Patches */
     {
         0,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
     },
     /* PSOv1 European -- No Patches */
     {
         0,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
         0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
-        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
     },
     /* PSOv2 Japanese -- HL Check + Maps */
     {
         9,
         0x8C237404, 0xE000000B, 0x8C32D638, 0x8C0081FC, 0x8C32D63C, 0x00000006,
         0x8C32D648, 0x8C00822C, 0x8C32D64C, 0x00000006, 0x8C32D650, 0x8C00825C,
-        0x8C32D654, 0x00000006, 0x8C32D658, 0x8C00828C, 0x8C32D65C, 0x00000006
+        0x8C32D654, 0x00000006, 0x8C32D658, 0x8C00828C, 0x8C32D65C, 0x00000006,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
     },
     /* PSOv2 US -- HL Check + Maps */
     {
         9,
         0x8C23859C, 0xE000000B, 0x8C32FED0, 0x8C0081FC, 0x8C32FED4, 0x00000006,
         0x8C32FEE0, 0x8C00822C, 0x8C32FEE4, 0x00000006, 0x8C32FEE8, 0x8C00825C,
-        0x8C32FEEC, 0x00000006, 0x8C32FEF0, 0x8C00828C, 0x8C32FEF4, 0x00000006
+        0x8C32FEEC, 0x00000006, 0x8C32FEF0, 0x8C00828C, 0x8C32FEF4, 0x00000006,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
     },
     /* PSOv2 European -- Maps only */
     {
         8,
         0x8C3244A8, 0x8C0081FC, 0x8C3244AC, 0x00000006, 0x8C3244B8, 0x8C00822C,
         0x8C3244BC, 0x00000006, 0x8C3244C0, 0x8C00825C, 0x8C3244C4, 0x00000006,
-        0x8C3244C8, 0x8C00828C, 0x8C3244CC, 0x00000006, 0x00000000, 0x00000000
-    }
+        0x8C3244C8, 0x8C00828C, 0x8C3244CC, 0x00000006, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
+    },
+    /* PSO NTE -- No Patches */
+    {
+        0,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
+    },
+};
+
+static const uint32 patch_tables2[NUM_PSO_DISCS][23] = {
+    /* PSOv1 Japanese -- HL Check only */
+    {
+        1,
+        0x8C20C474, 0xE000000B, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
+    },
+    /* PSOv1 US -- No Patches */
+    {
+        0,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
+    },
+    /* PSOv1 European -- No Patches */
+    {
+        0,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
+    },
+    /* PSOv2 Japanese -- HL Check + Maps */
+    {
+        11,
+        0x8C237404, 0xE000000B, 0x8C32D638, 0x8C0081FC, 0x8C32D63C, 0x00000006,
+        0x8C32D648, 0x8C00822C, 0x8C32D64C, 0x00000006, 0x8C32D650, 0x8C00825C,
+        0x8C32D654, 0x00000006, 0x8C32D658, 0x8C00828C, 0x8C32D65C, 0x00000006,
+        0x8C333FC0, 0x8C345430, 0x8C333FD4, 0x8C34543A
+    },
+    /* PSOv2 US -- HL Check + Maps */
+    {
+        11,
+        0x8C23859C, 0xE000000B, 0x8C32FED0, 0x8C0081FC, 0x8C32FED4, 0x00000006,
+        0x8C32FEE0, 0x8C00822C, 0x8C32FEE4, 0x00000006, 0x8C32FEE8, 0x8C00825C,
+        0x8C32FEEC, 0x00000006, 0x8C32FEF0, 0x8C00828C, 0x8C32FEF4, 0x00000006,
+        0x8C336860, 0x8C347D48, 0x8C336874, 0x8C347D52
+    },
+    /* PSOv2 European -- Maps only */
+    {
+        10,
+        0x8C3244A8, 0x8C0081FC, 0x8C3244AC, 0x00000006, 0x8C3244B8, 0x8C00822C,
+        0x8C3244BC, 0x00000006, 0x8C3244C0, 0x8C00825C, 0x8C3244C4, 0x00000006,
+        0x8C3244C8, 0x8C00828C, 0x8C3244CC, 0x00000006, 0x8C32AE38, 0x8C33AE08,
+        0x8C32AE4C, 0x8C33AE12, 0x00000000, 0x00000000
+    },
+    /* PSO NTE -- No Patches */
+    {
+        0,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000, 0x00000000,
+        0x00000000, 0x00000000, 0x00000000, 0x00000000
+    },
 };
 
 /* Map pointer tables... These are effectively pointers to filenames. This
@@ -181,7 +263,9 @@ static const uint32 map_ptrs[NUM_PSO_DISCS][48] = {
         0x8C324B34, 0x8C324B79, 0x8C324B34, 0x8C324B8B, 0x8C324B34, 0x8C0082DA,
         0x8C324B9D, 0x8C324BAC, 0x8C324B9D, 0x8C324BBE, 0x8C324B9D, 0x8C324BD0,
         0x8C324B9D, 0x8C324BE2, 0x8C324B9D, 0x8C324BF4, 0x8C324B9D, 0x8C0082EC
-    }
+    },
+    /* PSO NTE -- Nothing of interest */
+    { 0 }
 };
 
 /* Added map names */

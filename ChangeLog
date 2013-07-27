@@ -1,6 +1,37 @@
 Sylverant PSO Patcher ChangeLog
 -------------------------------
 
+v1.2 -> v2.0:
+----------------------------------------
+* Pretty much rewrote the entire patcher program itself. The new version doesn't
+  use KOS itself (although it does borrow a few files from it). Most of the rest
+  of the changes in this version are related to that.
+* Added in Marcus Comstedt's cdfs code with slight modifications.
+* Added in Marcus Comstedt's maple code.
+* Added in a few utility files from KOS (video.[ch], biosfont.[ch], cdrom.[ch]),
+  some with slight modifications.
+* Added support for patching the server address in the PSO Network Trial
+  Edition.
+* Switched from using PNG files in a romdisk to just embedding the background in
+  the program itself by way of a header file. The img-enc directory contains the
+  code needed to create the image data headers. img-enc takes in a file that
+  contains the raw 32-bit RGBX pixels of the image and spits out an RLE'd 16-bit
+  version. bin2c (from KOS) turns that binary into a header file for inclusion
+  in the program. You can generate the 32-bit RGBX image files by using The Gimp
+  and selecting to export to raw image data.
+* Adjusted fb_console to the fact that we don't have libc, so no vsnprintf.
+* Rewrote the boot stub function and moved it out of the code that is kept
+  resident while the game is running.
+* In the process of doing all that other stuff, fixed booting all kinds of games
+  that would not boot with the patcher before.
+* Another thing that got fixed in the process of doing all that is the strange
+  bug where you would immediately get a Time Up message if you tried to play
+  Battle Mode in PSO (so, no, it wasn't a server-side issue).
+* Added in support for patching the background music for the Spaceship and
+  Palace stages so that they can be used with sensible background music in non-
+  Battle quests. This patch is on by default for all PSOv2 versions, but can be
+  turned off by starting the game with A instead of Start.
+
 v1.1 -> v1.2:
 ----------------------------------------
  * Fix an issue with booting games with multiple data tracks in the high-density

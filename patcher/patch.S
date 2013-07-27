@@ -30,7 +30,6 @@
     .globl      _patches
     .globl      _server_addr
     .globl      _patches_enabled
-    .globl      _clear_and_load
     .globl      _gd_syscall_len
 
     .balign     4
@@ -99,7 +98,7 @@ _patches_count:
     .long       (.patches_end - _patches) >> 3
 _patches:
 #ifndef PLANET_RING
-    ! The maximum number of patches here is 9. The maximal list is shown in the
+    ! The maximum number of patches here is 11. The maximal list is shown in the
     ! comments. Not all versions will have all patches (and since EUv2 needs the
     ! map fix patch, but not the HL Check, they may not all match up with the
     ! comment either).
@@ -112,6 +111,8 @@ _patches:
     .long       0, 0                    ! Mine 1 map count (Ultimate)
     .long       0, 0                    ! Mine 2 map pointers (Ultimate)
     .long       0, 0                    ! Mine 2 map count (Ultimate)
+    .long       0, 0                    ! Spaceship music
+    .long       0, 0                    ! Palace music
 #else
     .long       0x8C072191, 0x30        ! Patch byte @ 0x62191 -> '0'
     .long       0x8C07228A, 0x58        ! Patch byte @ 0x6228A -> 'X'
@@ -138,38 +139,6 @@ _server_addr:
     .balign     2
 _patches_enabled:
     .word       1                       ! We will reset this otherwise...
-_clear_and_load:
-    ! Disable interrupts
-    mov.l       .no_ints_sr, r0
-    ldc         r0, sr
-    ! Clear out the loader
-    mov.l       .loader_base, r0
-    mov.l       .loader_end, r1
-    mov         #0, r2
-.clear_loop:
-    mov.l       r2, @r0
-    add         #4, r0
-    cmp/eq      r0, r1
-    bf          .clear_loop
-    ! Clean up the various registers...
-    ldc         r4, sr
-    ldc         r5, vbr
-    lds         r6, fpscr
-    mov         r7, r15
-    ! Jump to IP.BIN 
-    mov.l       .bin_base, r0
-    jmp         @r0
-    nop
-    .balign     4
-.no_ints_sr:
-    .long       0x500000F0
-.loader_base:
-    .long       0xACD00000
-.loader_end:
-    .long       0xAD000000
-.bin_base:
-    ! This is actually the first stage of the IP.BIN file.
-    .long       0xAC00B800
 
 _gd_syscall_len:
     .long       _gd_syscall_len - _gd_syscall
