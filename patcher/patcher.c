@@ -29,6 +29,10 @@
 #include "prbg.h"
 #endif
 
+#ifdef GDEMU
+#include "gdemu.h"
+#endif
+
 #define BIN_BASE    0xac010000
 #define IP_BASE     0xac008000
 #define SYS_BASE    0x8c008000
@@ -246,8 +250,14 @@ restart:
                     "Copyright (C) 2011-2013 Lawrence Sebald\n\n");
 #endif
 
+#ifndef GDEMU
     /* Wait for the user to insert a GD-ROM */
     fb_write_string("Please insert a GD-ROM...\n");
+#else
+    /* Automatically load the next image on GDEMU */
+    fb_write_string("Loading next image from GDEMU...\n");
+    gdemu_img_cmd(GDEMU_IMG_NEXT);
+#endif
     wait_for_disc();
 
     fb_write_string("Please wait while the disc is read...\n");
@@ -345,7 +355,7 @@ restart:
         patches_enabled = 0;
     }
     else {
-        /* Copy the GD-ROM syscall replacement... We can use from 0x8C008000 - 
+        /* Copy the GD-ROM syscall replacement... We can use from 0x8C008000 -
            0x8C0082FF (768 bytes) without making PSO angry.
            Not a lot of space, but it should be enough. */
         /* First fill in all the variables that it needs... */
@@ -395,7 +405,7 @@ restart:
         /* Copy the map table stuff, as appropriate. */
         memcpy((void *)MAP_TABLE, map_ptrs[disc->index], sizeof(uint32) * 48);
         memcpy((void *)MAP_NAMES, map_names, 68);
-#endif        
+#endif
 
         dcache_flush_range(SYS_BASE, 768);
     }
