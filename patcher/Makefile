@@ -22,6 +22,11 @@ OBJCOPY = sh-elf-objcopy -O binary
 OBJS = startup.o cdrom.o gd.o patch.o cdfs.o patcher.o video.o biosfont.o \
 	   fb_console.o maple.o utils.o cache.o
 
+ifdef GDEMU
+OBJS += gdemu.o
+CC += -DGDEMU
+endif
+
 all: rm-elf patcher.bin
 
 prpatcher: CC += -DPLANET_RING
@@ -46,6 +51,6 @@ rm-elf:
 
 .PHONY : clean
 clean:
-	-rm -f $(OBJS)
+	-rm -f $(OBJS) gdemu.o
 	-rm -f *.elf
 	-rm -f *.bin
